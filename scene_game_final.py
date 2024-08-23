@@ -123,7 +123,8 @@ if st.session_state.confirm == True or st.button("确定"):
         st.session_state.count=1
     else:
         input_text = get_dict('')
-        print(0)
+        st.session_state.count +=1
+        print(st.session_state.count)
         st.session_state.last_button_clicked = input_text['end']
         print(st.session_state.last_button_clicked)
 
@@ -133,7 +134,7 @@ if st.session_state.confirm == True or st.button("确定"):
 
     st.write(st.session_state.scene[-1])
 
-    if st.session_state.last_button_clicked:
+    if  st.session_state.count==4:
         print(st.session_state.last_button_clicked)
         print("结束")
         st.markdown("# 结束 🎉")
