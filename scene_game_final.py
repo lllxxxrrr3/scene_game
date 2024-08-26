@@ -5,46 +5,156 @@ import re
 st.set_page_config()
 
 prompt_start = """
-为我设计出一款冒险游戏。游戏玩法是你根据我给你的一些关键词，
-请根据我关键词的类型，创造一个情景（情景中可以有一些虚拟的角色）,
-同时给我两个选项，这两个选项会影响后续游戏的进程。以下是关键词和输出形式
+你是一个以解谜剧情为发展主线的互动游戏系统，让用户以第一人称视角体验。
+主线任务会持续进行，是由不同的剧情结点接连构成的；支线任务是属性值点数的提高和获得相关道具，主线任务需要根据属性点值的大小对用户做出的选择进行分析，并作用于后续剧情的生成。
+请注意：所有输出的内容要生成大括号并严格以json格式输出
 
-关键词：{key_words}
+现在是游戏开始阶段，以关键词：{key_words}剧情类型，生成游戏背景、主线任务，游戏背景要有大量的环境描写，人物描写，细节描写，并将故事完整叙述，文字要超过500字。
+为除自玩家自己外的每一个故事中的人物编号，以及这个游戏系统的具体规则，和用户的初始属性点数值。
+属性点包括：亲密值（对应不同人物），社会声望，智力，武力，敏捷度，健康值。
+切记，设置合适的初始属性点！
+然后向用户介绍游戏规则
+“  1.谜旅将担任旁白，叙述故事背景和内容
+   2.玩家通过不同的选择控制剧情走向，不同的选择会有不同的属性点变化
+   3.游玩过程中，玩家需进行解密回答问题，解开谜团
+   4.玩家参加支线任务可以获得相关道具，辅助主线发展（但不是必须）”
 
-请生成大括号并严格以以下json格式输出：
-    'scene':你创造的情景,
-    'option_1':你给的选项1,
-    'option_2':你给的选项2
-"""
+游戏由不同的每个剧情结点组成。每个剧情结点包括三类与用户的互动
+现在你已经生成了第一个剧情节点（就是你写的故事背景），现在需要根据剧情推进主线任务，给出三个可供选择的选项，这三个选项要有较大的差异，以引起不同的后续
+在必要时，剧情对一些特定环境或者工具进行专业解读，提高玩家的知识文化水平。例如古代的工具、历史遗迹、先进科技产品、著名的人物、著名的书籍、历史事件等
 
-prompt_next = """
-接着上面的剧情，玩家做出的选择是{option}，请根据选择和上面的情景接着
-描述出故事下一步的发展，并重新生成两个选项。
-注意：
-1，记住上面游戏的轮数，使游戏对话大约在10-15轮结束
-2，在故事的生成中，如果有涉及一些物理学或者生物学等知识，可以上网搜集相关的知识内容，并告诉我,如果没有就不生成这些内容，以我要求的格式生成其他内容.
-3,在结束时，给我一个完美的结局，并且告诉我是否结束。
-请生成大括号并严格的以以下的json格式输出：
-    'scene':你创造的情景,
+请生成大括号并严格以以下json格式输出,不要生成注释:
+    'scene':你创造的剧情背景,不要叙述人物的编号
+    'rule':你给出的游戏规则
+    'cohesion':根据编号顺序列出主人公（玩家）与其他人物的亲密度值，以Python列表的格式，值为主人公（玩家）与该人物的初始亲密度
+    'health':你为该人物设置的初始健康属性点
+    'reputation':你为该人物设置的初始社会声望属性点
+    'wisdom':你为人物设置的初始智力属性点
+    'strength':你为人物设置的初始武力值
+    'acuity':你为人物设置的初始敏捷度
+    'interact_type':本轮生成内容的类型，如果是故事背景及其设定介绍，该值为0，如果是主线剧情，则该值为1，初步进行支线任务，则该值为2，小解密，则该值为3
     'option_1':你给的选项1,
     'option_2':你给的选项2，
+    'option_3':你给的选项3
+"""
+prompt_section1 = """
+你是一个以解谜剧情为发展主线的互动游戏系统，让用户以第一人称视角体验。
+主线任务会持续进行，是由不同的剧情结点接连构成的；支线任务是属性值点数的提高和获得相关道具，主线任务需要根据属性点值的大小对用户做出的选择进行分析，并作用于后续剧情的生成。
+请注意：所有输出的内容要生成大括号并严格以json格式输出
+
+现有剧情为{plot}，现在需要推进主线剧情，主线任务要要有大量的环境描写，人物描写，细节描写，并将故事完整叙述，文字要超过500字。
+
+请生成大括号并严格以以下json格式输出：
+    'scene':你创造的剧情背景,不要叙述人物的编号
+    'rule':你给出的游戏规则
+    'cohesion':根据编号顺序列出主人公（玩家）与其他人物的亲密度值，以Python列表的格式，键为人物名字，值为主人公（玩家），与该人物的初始亲密度
+    'health':你为该人物设置的初始健康属性点
+    'reputation':你为该人物设置的初始社会声望属性点
+    'wisdom':你为人物设置的初始智力属性点
+    'strength':你为人物设置的初始武力值
+    'acuity':你为人物设置的初始敏捷度
+    'interact_type':本轮生成内容的类型，如果是故事背景及其设定介绍，该值为0，如果是主线剧情，则该值为1，初步进行支线任务，则该值为2，小解密，则该值为3
+    'option_1':你给的选项1,
+    'option_2':你给的选项2，
+    'option_3':你给的选项3
+"""
+#生成支线任务
+prompt_section2 = """
+你是一个以解谜剧情为发展主线的互动游戏系统，让用户以第一人称视角体验。
+主线任务会持续进行，是由不同的剧情结点接连构成的；支线任务是属性值点数的提高和获得相关道具，主线任务需要根据属性点值的大小对用户做出的选择进行分析，并作用于后续剧情的生成。
+
+现有的剧情是:{plot},现在在主线任务中选择{last_option}
+现在的属性值为为：社会声望{attribute1}，智力{attribute2}，武力{attribute3}，敏捷度{attribute4}，健康值{attribute4}。
+现在与各人物之间的亲密度为：{cohesion}
+你的任务是根据上述剧情的主线，设计与主线任务有关的支线任务，并生成三个选项，或者让玩家进行对话，对该任务进行初步处理，不要直接完成这个支线，基于这个选择（或者说的话）
+注意：现在的属性值已经发生变化，请根据最新的属性点设计剧情
+如果必要，剧情对一些特定环境或者工具进行专业解读，提高玩家的知识文化水平。例如古代的工具、历史遗迹、先进科技产品、著名的人物、著名的书籍、历史事件等，如果没有必要，则不生成
+
+请生成大括号并严格的以以下的json格式输出：
+    'scene':你设计的支线任务内容,
+    'option_1':你给的选项1,如果你设计的支线任务需要玩家发言，则该项可省略,
+    'option_2':你给的选项2,如果你设计的支线任务需要玩家发言，则该项可省略,
+    'option_3':你给的选项3,如果你设计的支线任务需要玩家发言，则该项可省略,
+    'interact_type':本轮生成内容的类型，如果是故事背景及其设定介绍，该值为0，如果是主线剧情，则该值为1，初步进行支线任务，则该值为2，小解密，则该值为3
+    'knowledge':你搜索到的专业解读,
+    'answer_type':你设计的支线任务需要玩家从三个选项中选择则该项为0,如果需要玩家发言,该项为1
+"""
+prompt_section3 = """
+你是一个以解谜剧情为发展主线的互动游戏系统，让用户以第一人称视角体验。
+主线任务会持续进行，是由不同的剧情结点接连构成的；支线任务是属性值点数的提高和获得相关道具，主线任务需要根据属性点值的大小对用户做出的选择进行分析，并作用于后续剧情的生成。
+
+现有的剧情是:{plot},对于最新的支线任务，选择（说）{last_option}{last_words}，基于这个选择，对属性点进行修改，改变值为要合理，推进支线任务，设计一个小解密，以完成这个支线任务
+如果必要，剧情对一些特定环境或者工具进行专业解读，提高玩家的知识文化水平。例如古代的工具、历史遗迹、先进科技产品、著名的人物、著名的书籍、历史事件等，如果没有必要，则不生成
+请生成大括号并严格的以以下的json格式输出：
+    'scene':你设计的剧情推进以及小解密,
+    'attri_change':上一轮属性点的变化以社会声望，智力，武力，敏捷度，健康值的顺序，以Python字典的格式输出，键为属性名称，值改变量
     'knowledge':你搜索到的知识,
-    'end'：是否结束，你只用输出True或False
+    'interact_type':本轮生成内容的类型，如果是故事背景及其设定介绍，该值为0，如果是主线剧情，则该值为1，初步进行支线任务，则该值为2，小解密，则该值为3
+
 """
 
 
-def get_dict(key_words):
-    if len(st.session_state.option) == 0:
-        response_text = call_glm(prompt=prompt_start.format(key_words=key_words), model='glm-4')
+def get_dict():
+    # 根据游戏状态选择合适的prompt
+    if st.session_state.game_state == 0:
+        prompt = prompt_start.format(key_words=st.session_state.key_words)
+    elif st.session_state.game_state == 1:
+        prompt = prompt_section2.format(plot=st.session_state.plot,
+                                        last_option=st.session_state.option[-1],
+                                        attribute1=st.session_state.social_reputation,
+                                        attribute2=st.session_state.wisdom,
+                                        attribute3=st.session_state.strength,
+                                        attribute4=st.session_state.acuity,
+                                        attribute5=st.session_state.health,
+                                        cohesion=st.session_state.cohesion)
+    elif st.session_state.game_state == 2:
+        prompt = prompt_section3.format(plot=st.session_state.plot,
+                                        last_option=st.session_state.option[-1],
+                                        last_words='')  # Add last_words if applicable
+    elif st.session_state.game_state == 3:
+        prompt = prompt_section1.format(plot=st.session_state.plot)  # If game_state 3, fallback to prompt_section1
     else:
-        response_text = call_glm(prompt=prompt_next.format(option=st.session_state.option[-1]), model='glm-4')
+        prompt = prompt_start.format(key_words=st.session_state.key_words)
 
+    # 调用API获取响应
+    response_text = call_glm(prompt=prompt, model='glm-4')
+    print(response_text)
+
+    # 提取并更新游戏状态和剧情内容
     pattern = r'({[^}]*})'
     matches = re.findall(pattern, response_text)
     response_info = matches[0].replace('\n', '')
     response_text = eval(response_info.strip())
+
+    # 更新scene到st.session_state.plot
+    new_scene = response_text.get("scene", "")
+    if new_scene:
+        st.session_state.plot += f"\n{new_scene}"
+
+    # 更新game_state
+    st.session_state.game_state = response_text.get("interact_type", 0)
+
     return response_text
 
+
+def display_sidebar():
+    st.sidebar.title("Character Attributes")
+
+    # 显示五个属性值
+    st.sidebar.markdown(f"**Social Reputation**: {st.session_state.social_reputation}")
+    st.sidebar.markdown(f"**Wisdom**: {st.session_state.wisdom}")
+    st.sidebar.markdown(f"**Strength**: {st.session_state.strength}")
+    st.sidebar.markdown(f"**Acuity**: {st.session_state.acuity}")
+    st.sidebar.markdown(f"**Health**: {st.session_state.health}")
+
+    # 显示各人物之间的cohesion
+    st.sidebar.title("Cohesion with Characters")
+    for cohesion_value in st.session_state.cohesion:
+        st.sidebar.markdown(f"****: {cohesion_value}")
+
+
+if "game_state" not in st.session_state:
+    st.session_state.game_state = -1  # 默认初始状态
 
 if 'confirm' not in st.session_state:
     st.session_state.confirm = False
@@ -66,6 +176,27 @@ if "chosen_options" not in st.session_state:
     st.session_state.chosen_options = []
 if "count" not in st.session_state:
     st.session_state.count = 0
+if "plot" not in st.session_state:
+    st.session_state.plot = ""
+if 'answer_type' not in st.session_state:
+    st.session_state.answer_type = 0
+if "social_reputation" not in st.session_state:
+    st.session_state.social_reputation = 0  # 设置社会声望初始值
+
+if "wisdom" not in st.session_state:
+    st.session_state.wisdom = 0  # 设置智力初始值
+
+if "strength" not in st.session_state:
+    st.session_state.strength = 0  # 设置武力初始值
+
+if "acuity" not in st.session_state:
+    st.session_state.acuity = 0  # 设置敏捷度初始值
+
+if "health" not in st.session_state:
+    st.session_state.health = 0  # 设置健康初始值
+
+if "cohesion" not in st.session_state:
+    st.session_state.cohesion = {}  # 设置与各人物的亲密度初始值为字典
 
 
 def confirm():
@@ -89,8 +220,68 @@ key_word = st.text_input("请输入关键词", key='key_words')
 if st.session_state.confirm == True or st.button("确定"):
     st.session_state.confirm = True
     if st.session_state.count == 0:
+        response_data = get_dict()
+
+        # 更新人物属性
+        st.session_state.social_reputation = response_data.get("reputation", 0)
+        st.session_state.wisdom = response_data.get("wisdom", 0)
+        st.session_state.strength = response_data.get("strength", 0)
+        st.session_state.acuity = response_data.get("acuity", 0)
+        st.session_state.health = response_data.get("health", 0)
+        st.session_state.cohesion = response_data.get("cohesion")
+        display_sidebar()
+
+        # 显示剧情
+        st.session_state.scene.append(response_data["scene"])
+        st.write(response_data["scene"])
+
+        # 显示选项
+        st.session_state.option_1 = response_data["option_1"]
+        st.session_state.option_2 = response_data["option_2"]
+        st.session_state.option_3 = response_data.get("option_3", "")
+
+        # 更新状态
+        st.session_state.count += 1
+
+elif st.session_state.game_state == 1:
+    # 显示当前剧情
+    for scene in st.session_state.scene:
+        st.write(scene)
+
+    # 显示选项
+    if st.button(st.session_state.option_1):
+        st.session_state.option.append(st.session_state.option_1)
+        response_data = get_dict()  # 推进剧情
+    elif st.button(st.session_state.option_2):
+        st.session_state.option.append(st.session_state.option_2)
+        response_data = get_dict()  # 推进剧情
+    elif st.button(st.session_state.option_3):
+        st.session_state.option.append(st.session_state.option_3)
+        response_data = get_dict()  # 推进剧情
+
+    # 更新人物属性
+    st.session_state.social_reputation = response_data.get("reputation", st.session_state.social_reputation)
+    st.session_state.wisdom = response_data.get("wisdom", st.session_state.wisdom)
+    st.session_state.strength = response_data.get("strength", st.session_state.strength)
+    st.session_state.acuity = response_data.get("acuity", st.session_state.acuity)
+    st.session_state.health = response_data.get("health", st.session_state.health)
+    st.session_state.cohesion = response_data.get("cohesion", st.session_state.cohesion)
+
+    # 显示新生成的剧情
+    st.session_state.scene.append(response_data["scene"])
+    st.write(response_data["scene"])
+
+# 显示左侧属性栏
+display_sidebar()
+
+'''
+key_word = st.text_input("请输入关键词", key='key_words')
+
+if st.session_state.confirm == True or st.button("确定"):
+    st.session_state.confirm = True
+    if st.session_state.count == 0:
         input_text = get_dict(key_word)
-    else:
+    elif st.session_state.game_state == 1:
         input_text = get_dict('')
 
     st.session_state.scene.append(input_text["scene"])
@@ -119,9 +310,14 @@ if st.session_state.confirm == True or st.button("确定"):
             else:
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.button(st.session_state.option_1[i], on_click=choose_1, key=f'b1_{i}')
+                    st.button(f'{st.session_state.option_1[i]}  轮数：{st.session_state.my_variable}', on_click=choose_1,
+                              key=f'b1_{i}')
                 with col2:
                     st.button(st.session_state.option_2[i], on_click=choose_2, key=f'b2_{i}')
+if 'my_variable' not in st.session_state:
+    st.session_state.my_variable = 1  # 初始化变量
+else:
+    st.session_state.my_variable += 1  # 每次运行程序时变量加 1
 
 print(st.session_state.scene)
 print(st.session_state.option_1)
@@ -129,3 +325,4 @@ print(st.session_state.option_2)
 print("option:", st.session_state.option)
 print("chosen_options:", st.session_state.chosen_options)
 print("knowledge:", st.session_state.knowledge)
+'''
