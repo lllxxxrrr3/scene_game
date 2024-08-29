@@ -143,8 +143,8 @@ def display_scene_with_options():
                     with st.container():
                         st.info(f"相关知识: {st.session_state.knowledge[i]}")
             else:
-                if st.session_state.count == st.session_state.count_end:
-
+                # if st.session_state.count == st.session_state.count_end:
+                if st.session_state.count == 3:
                     if_end()
                 # 如果用户尚未做出选择，显示选项按钮或文本输入框
                 elif st.session_state.game_state == 3:
@@ -194,6 +194,7 @@ def if_end():
     st.session_state.scene.append(response["scene"])
     st.write(st.session_state.scene[-1])
     st.markdown("# 结束 🎉")
+    st.balloons()
 
 if "key_words" not in st.session_state:
     st.session_state.key_words = ""  # 默认初始状态
