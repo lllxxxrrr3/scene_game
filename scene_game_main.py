@@ -82,12 +82,9 @@ def choose_3():
 
 def get_dict():
     # 根据游戏状态选择合适的prompt
-    st.write(1,st.session_state.game_state)
     if int(st.session_state.game_state) == -1:
-        st.write(111111)
         prompt = prompt_start.format(key_words=st.session_state.key_words)
     elif int(st.session_state.game_state)%3 == 0:
-        st.write(2222222)
         prompt = prompt_section1.format(plot=st.session_state.plot,
                                         last_option=st.session_state.option[-1],
                                         attribute1=st.session_state.social_reputation,
@@ -97,7 +94,6 @@ def get_dict():
                                         attribute5=st.session_state.health,
                                         )
     elif int(st.session_state.game_state)%3 == 1:
-        st.write(333333)
         prompt = prompt_section1.format(plot=st.session_state.plot,
                                         last_option=st.session_state.option[-1],
                                         attribute1=st.session_state.social_reputation,
@@ -107,7 +103,6 @@ def get_dict():
                                         attribute5=st.session_state.health,
                                         )  # Add last_words if applicable
     elif int(st.session_state.game_state)%3 == 2:
-        st.write(44444)
         prompt = prompt_section2.format(plot=st.session_state.plot,
                                         last_option=st.session_state.option[-1],
                                         attribute1=st.session_state.social_reputation,
@@ -171,8 +166,6 @@ def display_scene_with_options():
     """
     用于在 Streamlit 应用中展示生成的游戏场景，并处理用户的选择。
     """
-    st.write(2,st.session_state.game_state)
-    st.write("count",st.session_state.count)
     for i in range(st.session_state.count):
         # 显示当前场景
         print(i)
