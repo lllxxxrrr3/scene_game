@@ -2,7 +2,58 @@ import streamlit as st
 from call_glm import call_glm, call_cogview
 import re
 from prompt import prompt_start,prompt_image,prompt_section1,prompt_section2,prompt_section3,prompt_end
-st.set_page_config()
+st.set_page_config(page_title="欢迎界面",
+    page_icon=':smiley:',
+    layout='wide',
+    initial_sidebar_state='expanded')
+
+if "ready" not in st.session_state:
+    st.session_state.ready = 0  # 设置健康初始值
+
+with st.sidebar:
+    st.write("欢迎,请选择您想要的BGM")
+    tab1, tab2, tab3 = st.tabs(["无", "轻快","紧张"])
+    with tab2:
+    # 提供音频文件
+        audio_file = open(r'D:\Download\llama3\peace.mp3', 'rb')
+        st.audio(audio_file, format='audio/mp3', start_time=0)
+    with tab3:
+        audio_file3 = open(r'D:\Download\llama3\tension.mp3', 'rb')
+        st.audio(audio_file3, format='audio/mp3', start_time=0)
+
+if st.session_state.ready==0:
+    st.markdown("""
+    您好！感谢您访问我们设计的小游戏——迷旅。
+    希望能您带来非凡的游戏体验！
+    ---
+    
+    ### 🌟 游戏类型选择
+    在开始冒险之前，请输入您希望体验的剧情类型关键词，如·：
+    - 科幻 - 古代 - 现代 - 喜剧
+    
+    ### 初始属性点
+    - 社会声望：？ - 智力：？ - 武力：？ - 健康值：？
+    
+    ### 游戏规则
+    1. **游戏背景**：游戏设定在一个充满谜团的世界中，您将以第一人称视角体验一段非凡的冒险旅程。
+    2. **故事叙述**：旁白将叙述故事背景和内容，包括丰富的环境、人物和细节描写。
+    3. **玩家选择**：您将通过不同的选择控制剧情走向，每个选择都会影响您的属性点。
+    4. **解密任务**：在游玩过程中，您需要解密回答问题，解开谜团。
+    
+    ### 知识与文化
+    在您的冒险中，您将接触到各种专业知识，提高您的文化水平，包括但不限于：
+    - 古代工具 - 历史遗迹  - 先进科技产品
+    
+    ### 🛠️ 开源项目
+    
+    -如果您对我们的开源项目感兴趣，请访问我们的GitHub仓库：[GitHub](https://github.com/lllxxxrrr3/scene_game/)
+    ---
+    
+    ### 🚀 正式开始游戏
+    你准备好开启你的冒险了吗？一旦确认，我们将正式开始游戏。
+    请确认您已阅读并理解以上规则，然后点击下面的按钮开始游戏。
+    
+    """, unsafe_allow_html=True)
 
 def confirm():
     st.session_state.confirm = True
@@ -144,7 +195,7 @@ def display_scene_with_options():
                         st.info(f"相关知识: {st.session_state.knowledge[i]}")
             else:
                 # if st.session_state.count == st.session_state.count_end:
-                if st.session_state.count == 3:
+                if st.session_state.count == st.session_state.count_end:
                     if_end()
                 # 如果用户尚未做出选择，显示选项按钮或文本输入框
                 elif st.session_state.game_state == 3:
@@ -195,6 +246,7 @@ def if_end():
     st.write(st.session_state.scene[-1])
     st.markdown("# 结束 🎉")
     st.balloons()
+
 
 if "key_words" not in st.session_state:
     st.session_state.key_words = ""  # 默认初始状态
@@ -253,22 +305,23 @@ if "health" not in st.session_state:
 if "cohesion" not in st.session_state:
     st.session_state.cohesion = {}  # 设置与各人物的亲密度初始值为字典
 
-
-
-# main
-key_word = st.text_input("请输入关键词", key='key_words')
-print(st.session_state.game_state)
-if st.session_state.confirm == True or st.button("确定"):
-    st.session_state.confirm = True
-    # if st.session_state.count == 0:
-    #     response_data = get_dict()
-    #     display_sidebar()
-    #     display_scene_with_options()
-    # elif st.session_state.game_state == 0:
-    #     response_data = get_dict()
-    #     display_sidebar()
-    #     display_scene_with_options()
-    # elif st.session_state.game_state == 1:
-    response_data = get_dict()
-    display_sidebar()
-    display_scene_with_options()
+if st.button("我准备好了，开始冒险！"):
+    st.write("游戏正式开始，祝您好运！")
+    st.session_state.ready=1
+if st.session_state.ready:
+    key_word = st.text_input("请输入关键词", key='key_words')
+    print(st.session_state.game_state)
+    if st.session_state.confirm == True or st.button("确定"):
+        st.session_state.confirm = True
+        # if st.session_state.count == 0:
+        #     response_data = get_dict()
+        #     display_sidebar()
+        #     display_scene_with_options()
+        # elif st.session_state.game_state == 0:
+        #     response_data = get_dict()
+        #     display_sidebar()
+        #     display_scene_with_options()
+        # elif st.session_state.game_state == 1:
+        response_data = get_dict()
+        display_sidebar()
+        display_scene_with_options()
