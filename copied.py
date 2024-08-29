@@ -2,7 +2,7 @@ import streamlit as st
 from call_glm import call_glm, call_cogview
 import re
 from prompt import prompt_start,prompt_image,prompt_section1,prompt_section2,prompt_section3,prompt_end
-st.set_page_config(page_title="欢迎界面",
+st.set_page_config(page_title="迷旅小游戏",
     page_icon=':smiley:',
     layout='wide',
     initial_sidebar_state='expanded')
@@ -305,10 +305,10 @@ if "health" not in st.session_state:
 if "cohesion" not in st.session_state:
     st.session_state.cohesion = {}  # 设置与各人物的亲密度初始值为字典
 
-if st.button("我准备好了，开始冒险！"):
+if  st.button("我准备好了，开始冒险！"):
     st.write("游戏正式开始，祝您好运！")
     st.session_state.ready=1
-if st.session_state.ready:
+if  st.session_state.ready:
     key_word = st.text_input("请输入关键词", key='key_words')
     print(st.session_state.game_state)
     if st.session_state.confirm == True or st.button("确定"):
