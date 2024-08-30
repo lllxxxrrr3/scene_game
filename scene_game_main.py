@@ -11,8 +11,7 @@ st.set_page_config(page_title="迷旅小游戏",
 
 if "ready" not in st.session_state:
     st.session_state.ready = 0  # 设置健康初始值
-
-with st.sidebar:
+'''with st.sidebar:
     st.write("欢迎,请选择您想要的BGM")
     tab1, tab2, tab3 = st.tabs(["无", "轻快", "紧张"])
     with tab2:
@@ -40,6 +39,7 @@ with st.sidebar:
             </audio>
         """
         st.markdown(audio_html3, unsafe_allow_html=True)
+'''
 
 if st.session_state.ready == 0:
     st.markdown("""
@@ -149,10 +149,14 @@ def get_dict():
     new_scene = response_text.get("scene", "")
     if new_scene:
         # 更新剧情历史记录
-        st.session_state.plot += f"\n{new_scene}"
-        # 更新剧情
-        st.session_state.scene.append(response_text["scene"])
-
+        if int(st.session_state.game_state) % 3 == 1 or int(st.session_state.game_state) % 3 == 0:
+            st.session_state.plot += f"\n[主线剧情]：{new_scene}"
+            # 更新剧情
+            st.session_state.scene.append(response_text["scene"])
+        elif int(st.session_state.game_state) % 3 == 2:
+            st.session_state.plot += f"\n[解密剧情]：{new_scene}"
+            # 更新剧情
+            st.session_state.scene.append(response_text["scene"])
         # 更新状态
         st.session_state.count += 1
         # 生成图片
