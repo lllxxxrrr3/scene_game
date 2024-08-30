@@ -20,3 +20,4 @@
 >*   打开终端，输入
 >   >   `streamlit run scene_game_main.py`
 
+## 等界面显示之后就可以开始游戏啦！
